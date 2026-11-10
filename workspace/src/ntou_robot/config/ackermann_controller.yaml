@@ -1,0 +1,54 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 50 # Hz
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    ackermann_steering_controller:
+      type: ackermann_steering_controller/AckermannSteeringController
+
+ackermann_steering_controller:
+  ros__parameters:
+    # 0.0 means "the reference is reset after every control cycle", so a
+    # 10 Hz teleop publisher only actually drives the robot ~1/5 of the time.
+    # Use a real timeout so a steady stream of commands is honoured.
+    reference_timeout: 0.5
+    front_steering: true
+    open_loop: false
+
+    # Use the wheel VELOCITY state interfaces (encoders), not position diffing.
+    position_feedback: false
+    velocity_rolling_window_size: 10
+
+    # Geometry -- must match robot.urdf.xacro exactly.
+    #   wheelbase            = 1.0  (front/rear axle distance)
+    #   track width          = total_width - wheel_width = 0.8 - 0.1 = 0.7
+    #   traction wheel radius = 0.2
+    wheelbase: 0.58
+    traction_track_width: 0.80
+    steering_track_width: 0.80
+    traction_wheels_radius: 0.10
+
+    # IMPORTANT: for a two-joint axis the controller expects the order
+    # [right, left]. The old config listed [left, right], which swaps the
+    # steering correction and corrupts the yaw estimate while turning.
+    traction_joints_names: [
+      'rear_right_wheel_joint',
+      'rear_left_wheel_joint',
+    ]
+    steering_joints_names: [
+      'front_right_steering_joint',
+      'front_left_steering_joint',
+    ]
+
+    # TF and Odometry settings.
+    # enable_odom_tf is false because robot_localization owns odom -> base_footprint.
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    enable_odom_tf: false
+
+    # Covariances (diagonal of the 6x6 pose/twist matrices).
+    pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.01]

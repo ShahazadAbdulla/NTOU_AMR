@@ -1,0 +1,190 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="ntou_world">
+    <!-- Physics & Plugins -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <!-- System plugin for GPU ray-tracing sensors -->
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    
+    <!-- Lighting & Ground -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation><range>1000</range><constant>0.9</constant><linear>0.01</linear><quadratic>0.001</quadratic></attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+    
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision"><geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry></collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient><diffuse>0.8 0.8 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- NTOU Facility Walls -->
+    <model name="ntou_facility">
+      <static>true</static>
+
+      <!-- Continuous Left Wall: Lower Segment (Y=3.0 to Y=14.5, past r1_bot) -->
+      <link name="continuous_left_wall_1">
+        <pose>-4.1 8.75 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 11.5 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 11.5 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Continuous Left Wall: Upper Segment (Y=16.0 to Y=20.0, connects r1_top to hall end) -->
+      <link name="continuous_left_wall_2">
+        <pose>-4.1 18.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 4.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 4.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Bottom Corridor: Right Wall -->
+      <link name="bot_corr_right">
+        <pose>1.1 5.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 10.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 10.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Bottom Corridor: Left Wall Segment 1 (Origin to r2_bot) -->
+      <link name="bot_corr_left_1">
+        <pose>-1.1 1.5 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 3.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 3.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Bottom Corridor: Left Wall Segment 2 (Doorway top to r2_top) -->
+      <link name="bot_corr_left_2">
+        <pose>-1.1 5.25 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 1.5 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 1.5 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Room R2 Horizontal Walls (Connect to the continuous left wall) -->
+      <link name="r2_top">
+        <pose>-2.6 6.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>3.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>3.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r2_bot">
+        <pose>-2.6 3.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>3.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>3.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Rooms R3 & R4 (Right Side) -->
+      <link name="r3r4_top">
+        <pose>3.1 9.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>4.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>4.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r3r4_bot">
+        <pose>3.1 4.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>4.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>4.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r3r4_right">
+        <pose>5.0 6.5 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 5.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 5.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r3r4_divider">
+        <pose>3.1 6.5 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>4.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>4.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r3r4_left_top">
+        <pose>1.2 8.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 2.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 2.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r3r4_left_bot">
+        <pose>1.2 5.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 2.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 2.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Corridor Right Shift Connector (at Y=10) -->
+      <link name="shift_right">
+        <pose>-0.5 10.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>3.2 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>3.2 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Top Corridor: Right Wall -->
+      <link name="top_corr_right">
+        <pose>-1.9 15.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 10.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 10.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Room R1 (Attached to Continuous Left Wall) -->
+      <link name="r1_top">
+        <pose>-5.6 17.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>3.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>3.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r1_bot">
+        <pose>-5.6 14.0 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>3.0 0.2 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>3.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="r1_left">
+        <pose>-7.0 15.5 1.25 0 0 0</pose>
+        <collision name="c"><geometry><box><size>0.2 3.0 2.5</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>0.2 3.0 2.5</size></box></geometry>
+          <material><ambient>0.2 0.25 0.3 1</ambient><diffuse>0.2 0.25 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

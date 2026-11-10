@@ -1,0 +1,27 @@
+slam_toolbox:
+  ros__parameters:
+    use_sim_time: true
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    mode: mapping
+
+    # How far the robot must travel before a new scan is processed
+    minimum_travel_distance: 0.2
+    minimum_travel_heading: 0.174  # ~10 degrees
+    
+    # Map generation limits
+    map_update_interval: 1.0
+    resolution: 0.05
+    map_size: 500 # 500x500 cells (25m x 25m)
+    map_start_x: 0.5 # Start in the center
+    map_start_y: 0.5 # Start in the center
+    max_laser_range: 20.0
+    
+    # Karto Scan Matcher Settings (highly optimized for Jetson/CPU)
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_time_interval: 0.5
+    transform_timeout: 0.2
+    tf_buffer_duration: 10.0

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="controllers_yaml" default="$(find ntou_robot)/config/ackermann_controller.yaml"/>
+
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+
+    <!-- Steering Joints (Position Control) -->
+    <joint name="front_left_steering_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+    </joint>
+    <joint name="front_right_steering_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+    </joint>
+
+    <!--
+      Wheel Joints.
+      The AckermannSteeringController drives the two REAR (fixed) wheels and
+      reads their velocity/position as the odometry source. The front wheels
+      are left as passive, free-rolling joints so they always roll at the true
+      ground speed - they are still exported as state interfaces, so all four
+      wheel encoders appear on /joint_states.
+
+      If you want to emulate the real 4WD vehicle, uncomment the "mimic" params
+      on the front wheel joints below. gz_ros2_control will then drive them from
+      the rear wheels. Note this adds a small amount of scrub when cornering.
+    -->
+    <joint name="front_left_wheel_joint">
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+      <!-- <param name="mimic">rear_left_wheel_joint</param> -->
+      <!-- <param name="multiplier">1.0</param> -->
+    </joint>
+    <joint name="front_right_wheel_joint">
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+      <!-- <param name="mimic">rear_right_wheel_joint</param> -->
+      <!-- <param name="multiplier">1.0</param> -->
+    </joint>
+    <joint name="rear_left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+    </joint>
+    <joint name="rear_right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Gazebo Plugin Hook for ros2_control -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <!-- Must be an ABSOLUTE path. Use the xacro arg instead of hard-coding
+           a source-tree path, otherwise the plugin silently loads no params
+           when the package is installed from a different workspace. -->
+      <parameters>$(arg controllers_yaml)</parameters>
+    </plugin>
+
+    <!--
+      Ground-truth odometry straight from the physics engine. This is NOT used
+      by the robot - it exists so you can measure the wheel-odometry scale
+      error (see scripts/odom_debugger.py). Bridged to /ground_truth/odometry.
+    -->
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_footprint</robot_base_frame>
+      <dimensions>2</dimensions>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <odom_topic>/ground_truth/odometry</odom_topic>
+    </plugin>
+  </gazebo>
+</robot>

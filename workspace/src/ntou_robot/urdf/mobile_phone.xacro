@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Stand Properties -->
+  <xacro:property name="stand_length" value="0.03"/>
+  <xacro:property name="stand_width" value="0.04"/>
+  <xacro:property name="stand_height" value="0.08"/>
+
+  <!-- Samsung S23 Properties (Landscape: Width=146mm, Height=71mm, Depth=8mm) -->
+  <xacro:property name="phone_depth" value="0.008"/>
+  <xacro:property name="phone_width" value="0.146"/>
+  <xacro:property name="phone_height" value="0.071"/>
+
+  <!-- Stand Joint (Mounted 10cm behind the front edge) -->
+  <joint name="phone_stand_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="phone_stand_link"/>
+    <origin xyz="${(chassis_length / 2) - 0.120} 0.0 ${total_height + (stand_height / 2)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="phone_stand_link">
+    <visual>
+      <geometry><box size="${stand_length} ${stand_width} ${stand_height}"/></geometry>
+      <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
+    </visual>
+    <!-- Omit <collision> here if you want LiDAR rays to pass through it -->
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- Phone Joint (Mounted on top of the stand, facing forward) -->
+  <joint name="phone_joint" type="fixed">
+    <parent link="phone_stand_link"/>
+    <child link="phone_link"/>
+    <origin xyz="0 0 ${(stand_height / 2) + (phone_height / 2)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="phone_link">
+    <visual>
+      <geometry><box size="${phone_depth} ${phone_width} ${phone_height}"/></geometry>
+      <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+    </visual>
+    <!-- Omit <collision> here if you want LiDAR rays to pass through it -->
+    <inertial>
+      <mass value="0.168"/> <!-- S23 weight -->
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <!-- Gazebo IMU Sensor -->
+  <gazebo reference="phone_link">
+    <sensor name="imu_sensor" type="imu">
+      <always_on>1</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>/imu</topic>
+      <gz_frame_id>phone_link</gz_frame_id>
+      
+      <!-- MANDATORY BLOCK: Tells Gazebo to generate physics data -->
+      <imu>
+        <angular_velocity>
+          <x><noise type="none"/></x>
+          <y><noise type="none"/></y>
+          <z><noise type="none"/></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="none"/></x>
+          <y><noise type="none"/></y>
+          <z><noise type="none"/></z>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+</robot>

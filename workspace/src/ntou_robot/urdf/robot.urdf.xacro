@@ -1,0 +1,233 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="ntou_robot">
+
+  <!-- Total Dimensions -->
+  <xacro:property name="wheelbase" value="0.58"/> <!-- 58 cm center-to-center -->
+  <xacro:property name="total_width" value="0.63"/> <!-- 63 cm top width -->
+  <xacro:property name="chassis_length" value="0.87"/> <!-- 87 cm total length -->
+  <xacro:property name="ground_clearance" value="0.05"/> <!-- 5 cm -->
+
+  <!-- Wheel Dimensions -->
+  <xacro:property name="wheel_radius" value="0.10"/> <!-- 20 cm diameter -->
+  <xacro:property name="wheel_dia" value="${2 * wheel_radius}"/>
+  <xacro:property name="wheel_width" value="0.05"/> <!-- Standard 10cm width -->
+  <xacro:property name="track_width" value="0.80"/> <!-- 80 cm left-to-right center -->
+
+  <!-- Stepped Chassis Dimensions -->
+  <xacro:property name="lower_chassis_width" value="0.25"/> 
+  <xacro:property name="lower_chassis_height" value="0.21"/> <!-- 21 cm -->
+  <xacro:property name="upper_chassis_width" value="${total_width}"/>
+  <xacro:property name="upper_chassis_height" value="0.04"/> <!-- 4 cm -->
+  <xacro:property name="total_height" value="${lower_chassis_height + upper_chassis_height}"/>
+  
+  <material name="grey"><color rgba="0.5 0.5 0.5 1.0"/></material>
+  <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
+  <material name="red"><color rgba="0.8 0.1 0.1 1.0"/></material>
+
+  <!-- Inertia Macros -->
+  <xacro:macro name="box_inertia" params="m w h d">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${(m/12) * (h*h + d*d)}" ixy="0.0" ixz="0.0"
+               iyy="${(m/12) * (w*w + d*d)}" iyz="0.0"
+               izz="${(m/12) * (w*w + h*h)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertia" params="m r l">
+    <inertial>
+      <mass value="${m}"/>
+      <inertia ixx="${(m/12) * (3*r*r + l*l)}" ixy="0.0" ixz="0.0"
+               iyy="${(m/12) * (3*r*r + l*l)}" iyz="0.0"
+               izz="${(m/2) * (r*r)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <link name="base_footprint"/>
+  <!-- base_link is anchored at the bottom face of the chassis -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${ground_clearance}" rpy="0 0 0"/>
+  </joint>
+  
+  <!-- Base Link (Center of chassis) -->
+  <link name="base_link">
+    <!-- Lower Narrow Body -->
+    <visual>
+      <origin xyz="0 0 ${lower_chassis_height / 2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${lower_chassis_width} ${lower_chassis_height}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    
+    <!-- Upper Overhang Body (T-top covering the wheels) -->
+    <visual>
+      <origin xyz="0 0 ${lower_chassis_height + (upper_chassis_height / 2)}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${upper_chassis_width} ${upper_chassis_height}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+
+    <!-- Collisions for the two cuboids -->
+    <collision>
+      <origin xyz="0 0 ${lower_chassis_height / 2}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${lower_chassis_width} ${lower_chassis_height}"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 ${lower_chassis_height + (upper_chassis_height / 2)}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${upper_chassis_width} ${upper_chassis_height}"/>
+      </geometry>
+    </collision>
+
+    <!-- Chassis Mass: ~25kg -->
+    <xacro:box_inertia m="25.0" w="${upper_chassis_width}" h="${total_height}" d="${chassis_length}"/>
+  </link>
+
+  <!-- Arm Macro -->
+  <xacro:macro name="suspension_arm" params="prefix x_pos y_pos">
+    <link name="${prefix}_arm">
+      <visual>
+        <geometry>
+          <cylinder radius="0.03" length="${(track_width - lower_chassis_width) / 2}"/>
+        </geometry>
+        <!-- Shift cylinder outward so its inner end touches lower_chassis -->
+        <origin rpy="1.5708 0 0" xyz="0 ${((track_width - lower_chassis_width) / 4) if y_pos > 0 else -((track_width - lower_chassis_width) / 4)} 0"/>
+        <material name="red"/>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.03" length="${(track_width - lower_chassis_width) / 2}"/>
+        </geometry>
+        <origin rpy="1.5708 0 0" xyz="0 ${((track_width - lower_chassis_width) / 4) if y_pos > 0 else -((track_width - lower_chassis_width) / 4)} 0"/>
+      </collision>
+      <xacro:cylinder_inertia m="1.5" r="0.03" l="${(track_width - lower_chassis_width) / 2}"/>
+    </link>
+    
+    <joint name="${prefix}_arm_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${prefix}_arm"/>
+      <!-- Anchor at the lower chassis wall and at the wheel axle height -->
+      <origin xyz="${x_pos} ${(lower_chassis_width / 2) if y_pos > 0 else -(lower_chassis_width / 2)} ${wheel_radius - ground_clearance}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Wheel Macro -->
+  <xacro:macro name="wheel" params="prefix y_reflect">
+    <link name="${prefix}_wheel">
+      <visual>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+        <material name="black"/>
+      </visual>
+      <visual>
+        <origin xyz="0 ${y_reflect * (wheel_width / 2 + 0.0025)} 0" rpy="0 0 0"/> 
+        <geometry>
+          <box size="0.04 0.005 0.04"/>
+        </geometry>
+        <material name="white">
+          <color rgba="1.0 1.0 1.0 1.0"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+      </collision>
+      <!-- Wheel mass: ~3kg -->
+      <xacro:cylinder_inertia m="3.0" r="${wheel_radius}" l="${wheel_width}"/>
+    </link>
+    <!--
+      Isotropic, high-friction contact.
+      Do NOT set <fdir1> here: it makes the friction anisotropic in the link
+      frame, and because the wheel link is rotated about X the "forward" axis
+      is ambiguous, which lets the wheel scrub sideways and inflates the
+      distance reported by the encoders. Equal mu1/mu2 keeps the wheel
+      rolling without lateral slip.
+    -->
+    <gazebo reference="${prefix}_wheel">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+      <minDepth>0.001</minDepth>
+      <kp>1e7</kp>
+      <kd>1e2</kd>
+      <maxContacts>1</maxContacts>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Rear Wheels (Fixed arms, rotating wheels) -->
+  <xacro:suspension_arm prefix="rear_left" x_pos="-${wheelbase/2}" y_pos="${track_width/2}"/>
+  <xacro:suspension_arm prefix="rear_right" x_pos="-${wheelbase/2}" y_pos="-${track_width/2}"/>
+  
+  <xacro:wheel prefix="rear_left" y_reflect="1"/>
+  <xacro:wheel prefix="rear_right" y_reflect="-1"/>
+
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <parent link="rear_left_arm"/>
+    <child link="rear_left_wheel"/>
+    <origin xyz="0 ${(track_width - lower_chassis_width) / 2} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <parent link="rear_right_arm"/>
+    <child link="rear_right_wheel"/>
+    <origin xyz="0 -${(track_width - lower_chassis_width) / 2} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <!-- Front Steered Wheels (Arms -> Steering Knuckle -> Wheel) -->
+  <xacro:suspension_arm prefix="front_left" x_pos="${wheelbase/2}" y_pos="${track_width/2}"/>
+  <xacro:suspension_arm prefix="front_right" x_pos="${wheelbase/2}" y_pos="-${track_width/2}"/>
+
+  <link name="front_left_steering_knuckle">
+    <xacro:box_inertia m="0.5" w="0.05" h="0.05" d="0.05"/>
+  </link>
+  <link name="front_right_steering_knuckle">
+    <xacro:box_inertia m="0.5" w="0.05" h="0.05" d="0.05"/>
+  </link>
+
+  <joint name="front_left_steering_joint" type="revolute">
+    <parent link="front_left_arm"/>
+    <child link="front_left_steering_knuckle"/>
+    <origin xyz="0 ${(track_width - lower_chassis_width) / 2} 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.65" upper="0.65" effort="100" velocity="1.0"/>
+  </joint>
+
+  <joint name="front_right_steering_joint" type="revolute">
+    <parent link="front_right_arm"/>
+    <child link="front_right_steering_knuckle"/>
+    <origin xyz="0 -${(track_width - lower_chassis_width) / 2} 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.65" upper="0.65" effort="100" velocity="1.0"/>
+  </joint>
+
+  <xacro:wheel prefix="front_left" y_reflect="1"/>
+  <xacro:wheel prefix="front_right" y_reflect="-1"/>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <parent link="front_left_steering_knuckle"/>
+    <child link="front_left_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <joint name="front_right_wheel_joint" type="continuous">
+    <parent link="front_right_steering_knuckle"/>
+    <child link="front_right_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <xacro:include filename="ros2_control.xacro"/>
+  <xacro:include filename="lidar.xacro" />
+  <xacro:include filename="mobile_phone.xacro" />
+
+</robot>

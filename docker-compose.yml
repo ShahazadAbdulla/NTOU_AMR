@@ -1,0 +1,19 @@
+services:
+  ros2_dev:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    container_name: ros2_jazzy_dev
+    network_mode: host
+    ipc: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      # GUI Passthrough for RViz2
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Workspace shared between host and container
+      - ./workspace:/root/ros2_ws
+    stdin_open: true
+    tty: true

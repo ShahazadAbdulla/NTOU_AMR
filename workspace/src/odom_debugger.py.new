@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""Compare wheel odometry against Gazebo ground truth.
+
+Subscribes to:
+  /ackermann_steering_controller/odometry  - raw wheel/steering odometry
+  /odometry/filtered                       - robot_localization EKF output
+  /ground_truth/odometry                   - Gazebo physics pose (no wheel model)
+
+Press <Enter> in the terminal to reset the reference point, then drive the robot
+in a straight line. The tool prints the travelled distance of each source plus
+the scale ratio (measured / ground truth). A healthy wheel odometry should read
+close to 1.00.
+"""
+
+import math
+import sys
+import threading
+
+import rclpy
+from nav_msgs.msg import Odometry
+from rclpy.node import Node
+
+WHEEL_TOPIC = '/ackermann_steering_controller/odometry'
+EKF_TOPIC = '/odometry/filtered'
+TRUTH_TOPIC = '/ground_truth/odometry'
+
+
+class OdomDebugger(Node):
+    def __init__(self):
+        super().__init__('odom_debugger')
+        self.lock = threading.Lock()
+        self.starts = {'wheel': None, 'ekf': None, 'truth': None}
+        self.last_msg = {'wheel': None, 'ekf': None, 'truth': None}
+
+        self.create_subscription(Odometry, WHEEL_TOPIC,
+                                 lambda m: self._cb('wheel', m), 10)
+        self.create_subscription(Odometry, EKF_TOPIC,
+                                 lambda m: self._cb('ekf', m), 10)
+        self.create_subscription(Odometry, TRUTH_TOPIC,
+                                 lambda m: self._cb('truth', m), 10)
+
+        self.create_timer(2.0, self.report)
+        self.get_logger().info('odom_debugger active.')
+        self.get_logger().info(f'  wheel : {WHEEL_TOPIC}')
+        self.get_logger().info(f'  ekf   : {EKF_TOPIC}')
+        self.get_logger().info(f'  truth : {TRUTH_TOPIC}')
+        self.get_logger().info('Press <Enter> to reset the reference, then drive.')
+
+    @staticmethod
+    def _xy(msg):
+        p = msg.pose.pose.position
+        return p.x, p.y
+
+    @staticmethod
+    def _yaw(msg):
+        q = msg.pose.pose.orientation
+        siny = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        return math.atan2(siny, cosy)
+
+    def _cb(self, key, msg):
+        with self.lock:
+            if self.starts[key] is None:
+                self.starts[key] = msg
+            self.last_msg[key] = msg
+
+    def reset(self):
+        with self.lock:
+            for key, msg in self.last_msg.items():
+                self.starts[key] = msg
+        self.get_logger().info('Reference point reset.')
+
+    def _distance(self, key):
+        start = self.starts[key]
+        current = self.last_msg[key]
+        if start is None or current is None:
+            return None
+        x0, y0 = self._xy(start)
+        x1, y1 = self._xy(current)
+        return math.hypot(x1 - x0, y1 - y0)
+
+    def report(self):
+        with self.lock:
+            if self.last_msg['truth'] is None:
+                self.get_logger().warn(
+                    f'No ground truth on {TRUTH_TOPIC} yet - is the odometry '
+                    'publisher plugin loaded and bridged?')
+                return
+            truth = self._distance('truth')
+            wheel = self._distance('wheel')
+            ekf = self._distance('ekf')
+
+        if truth is None:
+            return
+
+        def ratio(value):
+            if value is None or truth < 1e-3:
+                return 'n/a'
+            return f'{value / truth:.3f}'
+
+        wheel_s = f'{wheel:.3f}' if wheel is not None else 'n/a'
+        ekf_s = f'{ekf:.3f}' if ekf is not None else 'n/a'
+        self.get_logger().info(
+            f'travelled  truth={truth:6.3f} m | wheel={wheel_s} m '
+            f'(x{ratio(wheel)}) | ekf={ekf_s} m (x{ratio(ekf)})')
+
+
+def _stdin_loop(node):
+    for line in sys.stdin:
+        if line is not None:
+            node.reset()
+
+
+def main():
+    rclpy.init()
+    node = OdomDebugger()
+    threading.Thread(target=_stdin_loop, args=(node,), daemon=True).start()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

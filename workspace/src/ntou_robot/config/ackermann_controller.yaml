@@ -23,8 +23,8 @@ ackermann_steering_controller:
     velocity_rolling_window_size: 10
 
     # Geometry -- must match robot.urdf.xacro exactly.
-    #   wheelbase            = 1.0  (front/rear axle distance)
-    #   track width          = total_width - wheel_width = 0.8 - 0.1 = 0.7
+    #   wheelbase            = 0.58  (front/rear axle distance)
+    #   track width          = total_width - wheel_width = 0.8 - 0.1 = 0.80
     #   traction wheel radius = 0.2
     wheelbase: 0.58
     traction_track_width: 0.80

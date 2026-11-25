@@ -3,16 +3,22 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import LifecycleNode, Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 
 def generate_launch_description():
+    pkg_ntou = get_package_share_directory('ntou_robot')
     foxglove_launch = os.path.join(
         get_package_share_directory('foxglove_bridge'),
         'launch',
         'foxglove_bridge_launch.xml',
     )
+
+    urdf_path = os.path.join(pkg_ntou, 'urdf', 'robot.urdf.xacro')
+    lidar_config = os.path.join(pkg_ntou, 'config', 'lslidar_m10p.yaml')
 
     venv_python = '/home/jetson/venvs/torch-cu132/bin/python'
     ros_site_packages = '/opt/ros/jazzy/lib/python3.12/site-packages'
@@ -27,6 +33,21 @@ def generate_launch_description():
 
     pz_dir = LaunchConfiguration('project_zero_dir')
     bridge_script = PathJoinSubstitution([pz_dir, 'examples', 'ros2_bridge.py'])
+
+    robot_description = ParameterValue(
+        Command(['xacro ', urdf_path]),
+        value_type=str,
+    )
+
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+        }],
+    )
 
     foxglove = IncludeLaunchDescription(
         XMLLaunchDescriptionSource(foxglove_launch),
@@ -53,11 +74,26 @@ def generate_launch_description():
         name='project_zero_bridge',
     )
 
+    lidar_driver = LifecycleNode(
+        package='lslidar_driver',
+        executable='lslidar_driver_node',
+        name='lslidar_driver_node',
+        namespace='x10',
+        parameters=[lidar_config],
+        remappings=[
+            ('scan', '/scan'),
+            ('lslidar_point_cloud', '/lslidar_point_cloud'),
+        ],
+        output='screen',
+    )
+
     return LaunchDescription([
         port_arg,
         address_arg,
         use_sim_time_arg,
         pz_dir_arg,
+        robot_state_publisher,
         foxglove,
         project_zero_bridge,
+        lidar_driver,
     ])

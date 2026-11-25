@@ -1,11 +1,11 @@
 """Real-robot bringup entry point.
 
-This file is intentionally minimal for now: it only starts the Foxglove
-WebSocket bridge so the robot can be visualised from a laptop over Wi-Fi.
-The rest of the real-robot stack (lidar, base interface, EKF, SLAM, Nav2,
-explore) will be added here incrementally per JETSON_PORT_PLAN.md. Do not
-reuse the *_sim.launch.py files for hardware: they start Gazebo and hard-code
-use_sim_time=True.
+This file starts the Foxglove WebSocket bridge (for laptop visualisation over
+Wi-Fi) and the Project ZeRo Zenoh/ROS bridge (phone telemetry -> ROS 2
+topics). The rest of the real-robot stack (lidar, base interface, EKF, SLAM,
+Nav2, explore) will be added here incrementally per JETSON_PORT_PLAN.md.
+Do not reuse the *_sim.launch.py files for hardware: they start Gazebo and
+hard-code use_sim_time=True.
 
 Usage (on the robot / Jetson):
 
@@ -19,17 +19,30 @@ Then connect Foxglove Studio (web or desktop) to:
     ws://<robot-ip>:8765
 
 Arguments:
-    port            WebSocket port (default 8765)
+    port            Foxglove WebSocket port (default 8765)
     address         Bind address (default 0.0.0.0, i.e. reachable over Wi-Fi)
     use_sim_time    Must stay False on hardware (default False)
+    project_zero_dir  Path to app/ProjectZeRo (holds examples/ros2_bridge.py)
+    bridge_in_xterm   Run the Zenoh/ROS bridge in its own xterm window (default false)
 """
 import os
+import sys
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    ExecuteProcess,
+    IncludeLaunchDescription,
+    SetEnvironmentVariable,
+)
+from launch.conditions import IfCondition
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    PythonExpression,
+)
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
@@ -47,6 +60,46 @@ def generate_launch_description():
         'use_sim_time', default_value='false',
         description='Use simulation clock (must be false on real hardware)')
 
+    default_pz = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), '..', '..', '..', '..',
+                     'app', 'ProjectZeRo'))
+    pz_dir_arg = DeclareLaunchArgument(
+        'project_zero_dir', default_value=default_pz,
+        description='Path to app/ProjectZeRo (holds examples/ros2_bridge.py)')
+    bridge_xterm_arg = DeclareLaunchArgument(
+        'bridge_in_xterm', default_value='false',
+        description='Run the Zenoh/ROS bridge in its own xterm window instead of inline')
+
+    pz_dir = LaunchConfiguration('project_zero_dir')
+    bridge_script = PathJoinSubstitution([pz_dir, 'examples', 'ros2_bridge.py'])
+
+    # Make project_zero_sdk importable by the bridge process.
+    set_pythonpath = SetEnvironmentVariable(
+        name='PYTHONPATH',
+        value=os.pathsep.join([
+            default_pz,
+            os.environ.get('PYTHONPATH', ''),
+        ]),
+    )
+
+    bridge_inline = ExecuteProcess(
+        cmd=[sys.executable, bridge_script],
+        output='screen',
+        name='project_zero_bridge',
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('bridge_in_xterm'),
+                              "' == 'false'"])),
+    )
+    bridge_xterm = ExecuteProcess(
+        cmd=['xterm', '-title', 'ProjectZeRo Bridge', '-e',
+             sys.executable, bridge_script],
+        output='screen',
+        name='project_zero_bridge_xterm',
+        condition=IfCondition(
+            PythonExpression(["'", LaunchConfiguration('bridge_in_xterm'),
+                              "' == 'true'"])),
+    )
+
     foxglove = IncludeLaunchDescription(
         XMLLaunchDescriptionSource(foxglove_launch),
         launch_arguments={
@@ -61,5 +114,10 @@ def generate_launch_description():
         port_arg,
         address_arg,
         use_sim_time_arg,
+        pz_dir_arg,
+        bridge_xterm_arg,
+        set_pythonpath,
         foxglove,
+        bridge_inline,
+        bridge_xterm,
     ])

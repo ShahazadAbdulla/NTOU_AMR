@@ -9,7 +9,7 @@ slam_toolbox:
 
     # How far the robot must travel before a new scan is processed
     minimum_travel_distance: 0.3
-    minimum_travel_heading: 0.25  # ~10 degrees
+    minimum_travel_heading: 0.25  # ~14.3 degrees
 
     # Map generation limits
     map_update_interval: 1.0

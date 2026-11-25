@@ -5,12 +5,12 @@
 
       <!-- Primary Navigation Sequence -->
       <PipelineSequence name="NavigateWithReplanning">
-        <RateController hz="1.0">
+        <DistanceController distance="3.0">
           <RecoveryNode number_of_retries="1" name="ComputePathRecovery">
             <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
             <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
           </RecoveryNode>
-        </RateController>
+        </DistanceController>
         <RecoveryNode number_of_retries="1" name="FollowPathRecovery">
           <FollowPath path="{path}" controller_id="FollowPath"/>
           <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
@@ -18,14 +18,14 @@
       </PipelineSequence>
 
       <!-- Ackermann-Safe Recovery Sequence (No In-Place Spin) -->
-      <RoundRobin name="RecoveryActions">
-        <Sequence name="ClearingAndPause">
-          <ClearEntireCostmap name="ClearLocalCostmap-Subtree" service_name="local_costmap/clear_entirely_local_costmap"/>
-          <ClearEntireCostmap name="ClearGlobalCostmap-Subtree" service_name="global_costmap/clear_entirely_global_costmap"/>
-          <Wait wait_duration="3.0"/>
-        </Sequence>
-        <BackUp backup_dist="0.30" backup_speed="0.15"/>
-      </RoundRobin>
+      <!-- Sequence, not RoundRobin: a successful branch reset RoundRobin to index 0,
+           so BackUp was never reached and the robot could not physically escape. -->
+      <Sequence name="RecoveryActions">
+        <ClearEntireCostmap name="ClearLocalCostmap-Subtree" service_name="local_costmap/clear_entirely_local_costmap"/>
+        <ClearEntireCostmap name="ClearGlobalCostmap-Subtree" service_name="global_costmap/clear_entirely_global_costmap"/>
+        <BackUp backup_dist="0.60" backup_speed="0.20"/>
+        <Wait wait_duration="1.0"/>
+      </Sequence>
 
     </RecoveryNode>
   </BehaviorTree>

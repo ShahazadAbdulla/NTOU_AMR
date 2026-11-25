@@ -1,0 +1,38 @@
+nodes:
+  - id: ingestion
+    path: ingestion_node.py
+    outputs:
+      - camera_data
+      - imu_data
+      - gps_data
+      
+  - id: viewer
+    path: viewer_node.py
+    inputs:
+      camera:
+        source: ingestion/camera_data
+        # Drops stale frames if OpenCV renders slower than 30fps
+        queue_policy: drop_oldest
+        queue_size: 2
+
+  - id: telemetry_viewer
+    path: python3
+    args: telemetry_node.py
+    inputs:
+      imu:
+        source: ingestion/imu_data
+        queue_policy: drop_oldest
+        queue_size: 5
+      gps:
+        source: ingestion/gps_data
+        queue_policy: drop_oldest
+        queue_size: 2
+
+  - id: imu_visualizer
+    path: python3
+    args: imu_3d_viewer.py
+    inputs:
+      imu:
+        source: ingestion/imu_data
+        queue_policy: drop_oldest
+        queue_size: 2

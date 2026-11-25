@@ -60,9 +60,19 @@ def generate_launch_description():
         'use_sim_time', default_value='false',
         description='Use simulation clock (must be false on real hardware)')
 
-    default_pz = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', '..',
-                     'app', 'ProjectZeRo'))
+    # Resolve app/ProjectZeRo whether this launch file is run from the source
+    # tree (workspace/src/ntou_robot/launch) or the installed tree
+    # (workspace/install/ntou_robot/share/ntou_robot/launch). Pick the first
+    # candidate that actually contains examples/ros2_bridge.py.
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _candidates = [
+        os.path.abspath(os.path.join(_here, '..', '..', '..', '..', 'app', 'ProjectZeRo')),
+        os.path.abspath(os.path.join(_here, '..', '..', '..', '..', '..', 'app', 'ProjectZeRo')),
+    ]
+    default_pz = next(
+        (c for c in _candidates
+         if os.path.isfile(os.path.join(c, 'examples', 'ros2_bridge.py'))),
+        _candidates[0])
     pz_dir_arg = DeclareLaunchArgument(
         'project_zero_dir', default_value=default_pz,
         description='Path to app/ProjectZeRo (holds examples/ros2_bridge.py)')
@@ -73,13 +83,15 @@ def generate_launch_description():
     pz_dir = LaunchConfiguration('project_zero_dir')
     bridge_script = PathJoinSubstitution([pz_dir, 'examples', 'ros2_bridge.py'])
 
-    # Make project_zero_sdk importable by the bridge process.
+    # Make project_zero_sdk importable by the bridge process. Use the resolved
+    # (possibly overridden) project_zero_dir so overrides keep working.
     set_pythonpath = SetEnvironmentVariable(
         name='PYTHONPATH',
-        value=os.pathsep.join([
-            default_pz,
+        value=[
+            LaunchConfiguration('project_zero_dir'),
+            os.pathsep,
             os.environ.get('PYTHONPATH', ''),
-        ]),
+        ],
     )
 
     bridge_inline = ExecuteProcess(

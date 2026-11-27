@@ -40,26 +40,27 @@ public:
       serialConnected_(false),
       haveAllJointSamples_(false)
     {
-        serialPort_ = declare_parameter<std::string>("serial_port", "/dev/ttyACM0");
+		serialPort_ = declare_parameter<std::string>("serial_port", "/dev/ntou_stm32");
         const int baud = declare_parameter<int>("baud_rate", 115200);
         maxLinearInput_ = declare_parameter<double>("max_linear_x_mps", 0.5);
         maxPwmPercent_ = declare_parameter<int>("max_pwm_percent", 50);
         maxAngularInput_ = declare_parameter<double>("max_angular_z_rad_s", 2.0);
-        maxSteeringDegrees_ = declare_parameter<int>("max_steering_degrees", 40);
+        maxSteeringDegrees_ = declare_parameter<int>("max_steering_degrees", 35);
         cmdTimeoutSeconds_ = declare_parameter<double>("cmd_vel_timeout_sec", 0.5);
         wheelJointNames_ = declare_parameter<std::vector<std::string>>(
             "wheel_joint_names",
             {"front_left_wheel_joint", "front_right_wheel_joint",
              "rear_right_wheel_joint", "rear_left_wheel_joint"});
         steeringJointNames_ = declare_parameter<std::vector<std::string>>(
-            "steering_joint_names", {"steering_right_joint", "steering_left_joint"});
+            "steering_joint_names",
+            {"front_right_steering_joint", "front_left_steering_joint"});
 
         if (baud != 115200) {
             throw std::invalid_argument("This firmware UART is fixed at 115200 baud.");
         }
         if (maxLinearInput_ <= 0.0 || maxAngularInput_ <= 0.0 ||
             maxPwmPercent_ < 1 || maxPwmPercent_ > 100 ||
-            maxSteeringDegrees_ < 1 || maxSteeringDegrees_ > 40 ||
+            maxSteeringDegrees_ < 1 || maxSteeringDegrees_ > 35 ||
             cmdTimeoutSeconds_ <= 0.0 || wheelJointNames_.size() != 4U ||
             steeringJointNames_.size() != 2U) {
             throw std::invalid_argument("Invalid hardware-interface parameter values.");
@@ -318,8 +319,8 @@ private:
             std::string key, value;
             if (!parseKeyValue(token, key, value)) continue;
             double parsed = 0.0;
-            if (steeringLine && key == "pos" && parseDouble(value, parsed)) {
-                updateJoint(jointIndex, parsed * kPi / 180.0);
+			if (steeringLine && key == "pos" && parseDouble(value, parsed)) {
+                updateJoint(jointIndex, -parsed * kPi / 180.0);
             } else if (!steeringLine && key == "rot" && parseDouble(value, parsed)) {
                 updateJoint(jointIndex, parsed * 2.0 * kPi);
             }
@@ -401,7 +402,7 @@ private:
     double maxLinearInput_{0.5};
     int maxPwmPercent_{50};
     double maxAngularInput_{2.0};
-    int maxSteeringDegrees_{40};
+    int maxSteeringDegrees_{35};
     double cmdTimeoutSeconds_{0.5};
     std::vector<std::string> wheelJointNames_;
     std::vector<std::string> steeringJointNames_;

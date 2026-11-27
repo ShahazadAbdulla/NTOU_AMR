@@ -203,7 +203,7 @@
          fighting a hard stop during pure-pursuit curvature overshoot. It does
          not raise the vehicle's real capability: minimum_turning_radius stays
          at 1.30 m, well above the 1.163 m the 0.65 rad stop allows. -->
-    <limit lower="-0.70" upper="0.70" effort="100" velocity="1.0"/>
+    <limit lower="-0.611" upper="0.611" effort="100" velocity="1.0"/>
   </joint>
 
   <joint name="front_right_steering_joint" type="revolute">
@@ -216,7 +216,7 @@
          fighting a hard stop during pure-pursuit curvature overshoot. It does
          not raise the vehicle's real capability: minimum_turning_radius stays
          at 1.30 m, well above the 1.163 m the 0.65 rad stop allows. -->
-    <limit lower="-0.70" upper="0.70" effort="100" velocity="1.0"/>
+    <limit lower="-0.611" upper="0.611" effort="100" velocity="1.0"/>
   </joint>
 
   <xacro:wheel prefix="front_left" y_reflect="1"/>

@@ -8,7 +8,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'serial_port',
-            default_value='/dev/ttyACM0',
+            default_value='/dev/ntou_stm32',
             description='STM32 USB virtual COM port'),
         Node(
             package='ntou_hardware_interface',
@@ -21,7 +21,7 @@ def generate_launch_description():
                 'max_linear_x_mps': 0.5,
                 'max_pwm_percent': 50,
                 'max_angular_z_rad_s': 2.0,
-                'max_steering_degrees': 40,
+                'max_steering_degrees': 35,
                 'cmd_vel_timeout_sec': 0.5,
             }],
         ),

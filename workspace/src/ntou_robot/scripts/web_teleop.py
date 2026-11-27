@@ -156,7 +156,7 @@ body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-i
     </section>
     <section class="panel center">
       <div class="panelhead">Safety</div>
-      <button class="estop" id="estopBtn">EMERGENCY<br>STOP</button>
+      <button class="estop" id="estopBtn">E<br>STOP</button>
       <button class="arm disarmed" id="armBtn">ENABLE CONTROLS</button>
       <div class="note">Emergency stop disables drive and steering. Re-enable explicitly before issuing another command.</div>
     </section>

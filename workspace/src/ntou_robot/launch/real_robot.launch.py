@@ -42,6 +42,9 @@ def generate_launch_description():
         default_value='/dev/ntou_stm32',
     )
 
+    teleop_port_arg = DeclareLaunchArgument('teleop_port', default_value='8080')
+    teleop_pin_arg = DeclareLaunchArgument('teleop_pin', default_value='101010')
+
     pz_dir = LaunchConfiguration('project_zero_dir')
     bridge_script = PathJoinSubstitution([pz_dir, 'examples', 'ros2_bridge.py'])
 
@@ -105,15 +108,30 @@ def generate_launch_description():
         }.items(),
     )
 
+    web_teleop = Node(
+        package='ntou_robot',
+        executable='web_teleop.py',
+        name='ntou_web_teleop',
+        output='screen',
+        additional_env={'PYTHONUNBUFFERED': '1'},
+        arguments=[
+            '--http-port', LaunchConfiguration('teleop_port'),
+            '--pin', LaunchConfiguration('teleop_pin'),
+        ],
+    )
+
     return LaunchDescription([
         port_arg,
         address_arg,
         use_sim_time_arg,
         pz_dir_arg,
         serial_port_arg,
+        teleop_port_arg,
+        teleop_pin_arg,
         robot_state_publisher,
         foxglove,
         project_zero_bridge,
         lidar_driver,
         hardware_interface,
+        web_teleop,
     ])

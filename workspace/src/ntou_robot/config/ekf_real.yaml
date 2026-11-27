@@ -5,6 +5,8 @@ ekf_filter_node:
     two_d_mode: true
     publish_tf: true
     print_diagnostics: true
+    debug: true
+    debug_out_file: /tmp/ekf_debug.txt
 
     map_frame: map
     odom_frame: odom

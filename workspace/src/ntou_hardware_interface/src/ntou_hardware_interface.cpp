@@ -72,7 +72,7 @@ public:
 
         jointStatePub_ = create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
         serialFeedbackPub_ = create_publisher<std_msgs::msg::String>("/hardware/serial_feedback", 20);
-        serialConnectedPub_ = create_publisher<std_msgs::msg::Bool>("/hardware/serial_connected", 10);
+        serialConnectedPub_ = create_publisher<std_msgs::msg::Bool>("/hardware/serial_connected", rclcpp::QoS(1).transient_local());
         cmdVelSub_ = create_subscription<geometry_msgs::msg::Twist>(
             "/cmd_vel", 10,
             std::bind(&NtouHardwareInterface::cmdVelCallback, this, std::placeholders::_1));

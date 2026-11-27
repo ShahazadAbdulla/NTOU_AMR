@@ -270,7 +270,7 @@
   ///
   /// A non-empty UTF-8 strings of at most 32 bytes. It is used during establishment to assign
   /// remotes to a region through the `gateway.south[].filters[].region_names` filter.
-  region_name: null,
+  ///region_name: null,
 
   /// Gateway configuration.
   ///
@@ -287,7 +287,7 @@
   gateway: {
     /// The `auto` preset mode puts peers and clients south of routers and client south of peers.
     /// This is the only available preset.
-    south: "auto"
+    ///south: "auto"
   },
 
   // /// Overwrite QoS options for Zenoh messages by key expression (ignores Zenoh API QoS config for overwritten values)
@@ -593,7 +593,7 @@
       /// Compression capabilities are negotiated during session establishment.
       /// If both Zenoh nodes support compression, then compression is activated.
       compression: {
-        enabled: true,
+        enabled: false,
       },
     },
     /// WARNING: multicast communication does not perform any negotiation upon group joining.
@@ -615,7 +615,7 @@
       /// Enables compression on multicast communication.
       /// Default to false for Zenoh-to-Zenoh-Pico out-of-the-box compatibility.
       compression: {
-        enabled: true,
+        enabled: false,
       },
     },
     link: {

@@ -284,11 +284,11 @@
   ///   - `interfaces`: a non-empty array of network interface names.
   ///   - `zids`: a non-empty array of Zenoh IDs.
   ///   - `region_names`: a non-empty array of region names.
-  gateway: {
+  ///gateway: {
     /// The `auto` preset mode puts peers and clients south of routers and client south of peers.
     /// This is the only available preset.
     ///south: "auto"
-  },
+  ///},
 
   // /// Overwrite QoS options for Zenoh messages by key expression (ignores Zenoh API QoS config for overwritten values)
   // qos: {

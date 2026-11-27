@@ -771,7 +771,7 @@
       /// subscriber side. By doing so, the probing procedure will succeed and shared memory will operate as expected.
       ///
       /// ROS setting: disabled by default until fully tested
-      enabled: true,
+      enabled: false,
       /// SHM resources initialization mode (default "lazy").
       /// - "lazy": SHM subsystem internals will be initialized lazily upon the first SHM buffer
       /// allocation or reception. This setting provides better startup time and optimizes resource usage,

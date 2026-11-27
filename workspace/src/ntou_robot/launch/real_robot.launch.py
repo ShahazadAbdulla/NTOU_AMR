@@ -53,6 +53,12 @@ def generate_launch_description():
         value_type=str,
     )
 
+    ekf_config = os.path.join(
+        get_package_share_directory('ntou_robot'),
+        'config',
+        'ekf_real.yaml'
+    )
+
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -119,7 +125,15 @@ def generate_launch_description():
             '--pin', LaunchConfiguration('teleop_pin'),
         ],
     )
-
+    
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config]
+    )
+    
     return LaunchDescription([
         port_arg,
         address_arg,
@@ -134,4 +148,5 @@ def generate_launch_description():
         lidar_driver,
         hardware_interface,
         web_teleop,
+        ekf_node,
     ])

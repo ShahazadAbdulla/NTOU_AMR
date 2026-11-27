@@ -7,6 +7,7 @@ from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitut
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -15,6 +16,12 @@ def generate_launch_description():
         get_package_share_directory('foxglove_bridge'),
         'launch',
         'foxglove_bridge_launch.xml',
+    )
+
+    hw_launch = os.path.join(
+        get_package_share_directory('ntou_hardware_interface'),
+        'launch',
+        'hardware_interface.launch.py',
     )
 
     urdf_path = os.path.join(pkg_ntou, 'urdf', 'robot.urdf.xacro')
@@ -29,6 +36,10 @@ def generate_launch_description():
     pz_dir_arg = DeclareLaunchArgument(
         'project_zero_dir',
         default_value='/home/jetson/NTOU_AMR/app/ProjectZeRo',
+    )
+    serial_port_arg = DeclareLaunchArgument(
+        'serial_port',
+        default_value='/dev/ntou_stm32',
     )
 
     pz_dir = LaunchConfiguration('project_zero_dir')
@@ -87,13 +98,22 @@ def generate_launch_description():
         output='screen',
     )
 
+    hardware_interface = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(hw_launch),
+        launch_arguments={
+            'serial_port': LaunchConfiguration('serial_port'),
+        }.items(),
+    )
+
     return LaunchDescription([
         port_arg,
         address_arg,
         use_sim_time_arg,
         pz_dir_arg,
+        serial_port_arg,
         robot_state_publisher,
         foxglove,
         project_zero_bridge,
         lidar_driver,
+        hardware_interface,
     ])

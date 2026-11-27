@@ -34,7 +34,7 @@
   <joint name="phone_joint" type="fixed">
     <parent link="phone_stand_link"/>
     <child link="phone_link"/>
-    <origin xyz="0 0 ${(stand_height / 2) + (phone_height / 2)}" rpy="0 0 0"/>
+    <origin xyz="0 0 ${(stand_height / 2) + (phone_height / 2)}" rpy="0 0 3.14159265"/>
   </joint>
 
   <link name="phone_link">
@@ -48,6 +48,14 @@
       <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
     </inertial>
   </link>
+  
+  <joint name="phone_imu_joint" type="fixed">
+    <parent link="phone_link"/>
+    <child link="phone_imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="phone_imu_link"/>
 
   <!-- Gazebo IMU Sensor -->
   <gazebo reference="phone_link">

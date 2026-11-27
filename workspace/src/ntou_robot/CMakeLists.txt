@@ -18,6 +18,7 @@ install(DIRECTORY urdf launch rviz worlds config maps behavior_trees
 # by sim.launch.py, so they must be installed with the executable bit set.
 install(PROGRAMS
   scripts/odom_debugger.py
+  scripts/web_teleop.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

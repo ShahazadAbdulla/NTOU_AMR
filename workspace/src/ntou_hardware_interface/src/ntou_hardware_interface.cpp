@@ -1,3 +1,5 @@
+#include "ntou_hardware_interface/wheel_odometry.hpp"
+
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -6,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <cerrno>
 #include <chrono>
 #include <cmath>
@@ -69,6 +72,14 @@ public:
         jointNames_.reserve(kJointCount);
         jointNames_.insert(jointNames_.end(), wheelJointNames_.begin(), wheelJointNames_.end());
         jointNames_.insert(jointNames_.end(), steeringJointNames_.begin(), steeringJointNames_.end());
+        
+		ntou_hardware_interface::WheelOdometry::Config odomCfg;
+        odomCfg.odom_scale = declare_parameter<double>("odom_scale", 2.0);
+        odomCfg.wheel_radius = declare_parameter<double>("wheel_radius", 0.10);
+        odomCfg.odom_frame = declare_parameter<std::string>("odom_frame", "odom");
+        odomCfg.base_frame = declare_parameter<std::string>("base_frame", "base_footprint");
+        odomCfg.topic = declare_parameter<std::string>("odom_topic", "/odom");
+        wheelOdom_ = std::make_unique<ntou_hardware_interface::WheelOdometry>(*this, odomCfg);
 
         jointStatePub_ = create_publisher<sensor_msgs::msg::JointState>("/joint_states", 10);
         serialFeedbackPub_ = create_publisher<std_msgs::msg::String>("/hardware/serial_feedback", 20);
@@ -314,15 +325,23 @@ private:
             return;
         }
 
-        std::string token;
+		std::string token;
         while (stream >> token) {
             std::string key, value;
             if (!parseKeyValue(token, key, value)) continue;
             double parsed = 0.0;
-			if (steeringLine && key == "pos" && parseDouble(value, parsed)) {
-                updateJoint(jointIndex, -parsed * kPi / 180.0);
+            if (steeringLine && key == "pos" && parseDouble(value, parsed)) {
+                const double steerRad = -parsed * kPi / 180.0;
+                updateJoint(jointIndex, steerRad);
+                if (wheelOdom_) {
+                    wheelOdom_->setSteeringRad(steerRad);
+                }
             } else if (!steeringLine && key == "rot" && parseDouble(value, parsed)) {
                 updateJoint(jointIndex, parsed * 2.0 * kPi);
+                if (wheelOdom_ && jointIndex < 4U) {
+                    wheelRotRev_[jointIndex] = parsed;
+                    wheelOdom_->setWheelRotations(wheelRotRev_);
+                }
             }
         }
     }
@@ -389,6 +408,9 @@ private:
         }
         if (serialFd_ >= 0) flushSerialWrites();
         publishJointStates();
+		if (wheelOdom_) {
+            wheelOdom_->publish(now());
+        }
     }
 
     std::string serialPort_;
@@ -419,6 +441,9 @@ private:
     std::array<bool, kJointCount> jointSampleValid_{};
     std::array<std::chrono::steady_clock::time_point, kJointCount> jointSampleTime_{};
     bool haveAllJointSamples_;
+
+	std::array<double, 4> wheelRotRev_{{0.0, 0.0, 0.0, 0.0}};
+    std::unique_ptr<ntou_hardware_interface::WheelOdometry> wheelOdom_;
 
     rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr jointStatePub_;
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr serialFeedbackPub_;

@@ -802,7 +802,7 @@
           /// path. This is useful for RPC-style traffic, and a workaround for the in-transit
           /// watchdog invalidation race that could occur under high CPU load.
           /// See https://github.com/eclipse-zenoh/zenoh/issues/2628
-          messages: ["put", "query", "reply"],
+          ///messages: ["put", "query", "reply"],
       },
     },
     auth: {
